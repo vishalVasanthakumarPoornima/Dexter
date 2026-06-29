@@ -1,0 +1,20 @@
+{
+  "SearchResult": {
+    "SearchResultItems": [
+      {
+        "MatchedObjectDescriptor": {
+          "PositionID": "USA-401",
+          "PositionTitle": "Student Trainee (Computer Science)",
+          "OrganizationName": "National Technology Agency",
+          "DepartmentName": "Department of Technology",
+          "PositionLocation": [{"LocationName": "San Francisco, California"}],
+          "QualificationSummary": "Student internship requiring Python, databases, and software engineering fundamentals.",
+          "PositionURI": "https://www.usajobs.gov/job/401",
+          "ApplyURI": ["https://www.usajobs.gov/apply/401"],
+          "PublicationStartDate": "2026-06-15T00:00:00Z",
+          "PositionRemuneration": [{"MinimumRange": "25", "MaximumRange": "38", "RateIntervalCode": "Per Hour"}]
+        }
+      }
+    ]
+  }
+}

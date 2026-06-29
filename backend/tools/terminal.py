@@ -1,23 +1,42 @@
 import subprocess
+from backend.permissions import policy
 
-# Only allow these commands for now
-ALLOWED_COMMANDS = {
-    "ls": "List directory contents",
-    "pwd": "Print current working directory",
-    "whoami": "Current user",
-    "git status": "Git repo status",
-}
+from backend.utils.logger import log_action
+
+def list_allowed_commands():
+    return policy.COMMAND_PERMISSIONS
 
 def run_command(command: str) -> dict:
     command = command.strip()
+    level = policy.get_permission_level(command)
 
-    if command not in ALLOWED_COMMANDS:
-        return {"ok": False, "error": "Command not allowed"}
+    if level == "blocked":
+        result = {"ok": False, "command": command, "error": "Command blocked"}
+        log_action("terminal_blocked", result)
+        return result
+
+    if level in ("sensitive", "sudo"):
+        return {"ok": False, "command": command, "error": policy.request_approval(command)}
 
     try:
-        result = subprocess.run(
-            command, shell=True, check=True, capture_output=True, text=True
+        completed = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
-        return {"ok": True, "command": command, "output": result.stdout.strip()}
+        result = {"ok": True, "command": command, "output": completed.stdout.strip() or completed.stderr.strip()}
+        log_action("terminal_executed", result)
+        return result
+
+    except subprocess.TimeoutExpired:
+        result = {"ok": False, "command": command, "error": "Command timed out"}
+        log_action("terminal_timeout", result)
+        return result
+
     except subprocess.CalledProcessError as e:
-        return {"ok": False, "command": command, "error": e.stderr.strip()}
+        result = {"ok": False, "command": command, "error": e.stderr.strip() or str(e)}
+        log_action("terminal_error", result)
+        return result

@@ -1,0 +1,26 @@
+{
+  "jobs": [
+    {
+      "id": 101,
+      "title": "Software Engineer Intern, AI Platform",
+      "company_name": "Northstar AI",
+      "absolute_url": "https://boards.greenhouse.io/northstar/jobs/101",
+      "updated_at": "2026-06-20T12:00:00Z",
+      "location": {"name": "San Francisco, CA"},
+      "offices": [{"name": "San Francisco, CA"}],
+      "departments": [{"name": "Engineering"}],
+      "content": "<p>Build Python and React tools for internal AI agents. Requirements include Python, APIs, SQL, and security awareness.</p>"
+    },
+    {
+      "id": 102,
+      "title": "Backend Engineer Intern",
+      "company_name": "LedgerWorks",
+      "absolute_url": "https://boards.greenhouse.io/ledgerworks/jobs/102",
+      "updated_at": "2026-06-19T12:00:00Z",
+      "location": {"name": "Remote"},
+      "offices": [{"name": "Remote"}],
+      "departments": [{"name": "Engineering"}],
+      "content": "<p>Work on FastAPI services, SQL models, and automation workflows. Internship role for university students.</p>"
+    }
+  ]
+}

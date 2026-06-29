@@ -1,0 +1,15 @@
+{
+  "results": [
+    {
+      "id": "adz-501",
+      "title": "Software Engineering Internship",
+      "company": {"display_name": "SearchWorks"},
+      "location": {"display_name": "Remote, US"},
+      "description": "Internship building backend services with Python, SQL, and cloud APIs.",
+      "redirect_url": "https://adzuna.example/jobs/501",
+      "created": "2026-06-14T10:00:00Z",
+      "salary_min": 30,
+      "salary_max": 45
+    }
+  ]
+}

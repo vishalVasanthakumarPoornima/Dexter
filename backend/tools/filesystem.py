@@ -1,15 +1,37 @@
 from pathlib import Path
 
-PROJECT_ROOT = Path.cwd().resolve()
+from backend.tools.safe_paths import (
+    PROJECT_ROOT,
+    USER_HOME,
+    display_path,
+    is_text_file,
+    resolve_safe_path,
+    should_skip_path,
+)
 
 
 def _safe_path(path: str) -> Path:
-    requested = (PROJECT_ROOT / path).resolve()
-
-    if not str(requested).startswith(str(PROJECT_ROOT)):
-        raise ValueError("Access denied: path is outside project root")
-
-    return requested
+    raw = (path or "project").strip()
+    if raw.startswith(("home/", "~/")):
+        return resolve_safe_path(raw)
+    if raw.lower() in {
+        ".",
+        "project",
+        "workspace",
+        "dexter",
+        "home",
+        "~",
+        "desktop",
+        "downloads",
+        "documents",
+        "career",
+        "personal",
+        "obsidian",
+    }:
+        return resolve_safe_path(raw)
+    if Path(raw).is_absolute():
+        return resolve_safe_path(raw)
+    return resolve_safe_path(str(PROJECT_ROOT / raw))
 
 
 def read_file(path: str) -> dict:
@@ -23,35 +45,53 @@ def read_file(path: str) -> dict:
 
     return {
         "ok": True,
-        "path": str(target.relative_to(PROJECT_ROOT)),
+        "path": display_path(target),
         "content": target.read_text(encoding="utf-8", errors="replace"),
     }
 
 
-def search_files(query: str, root: str = ".") -> dict:
+def search_files(query: str, root: str = ".", max_results: int = 75) -> dict:
+    clean_query = query.strip()
+    if not clean_query:
+        return {"ok": False, "error": "Search query is required."}
+
     search_root = _safe_path(root)
 
     if not search_root.exists():
         return {"ok": False, "error": "Search root not found"}
 
     matches = []
+    scanned = 0
+    max_files = 12000 if search_root == USER_HOME else 6000
+    max_text_bytes = 700_000
+    query_lower = clean_query.lower()
 
     for path in search_root.rglob("*"):
-        if any(part in {".git", ".venv", "__pycache__", "qdrant_storage"} for part in path.parts):
+        if should_skip_path(path):
             continue
 
         if path.is_file():
-            relative = str(path.relative_to(PROJECT_ROOT))
+            scanned += 1
+            relative = display_path(path)
 
-            if query.lower() in relative.lower():
+            if query_lower in relative.lower():
                 matches.append(relative)
-                continue
+            elif is_text_file(path, max_text_bytes):
+                try:
+                    content = path.read_text(encoding="utf-8", errors="replace")
+                    if query_lower in content.lower():
+                        matches.append(relative)
+                except Exception:
+                    continue
 
-            try:
-                content = path.read_text(encoding="utf-8", errors="replace")
-                if query.lower() in content.lower():
-                    matches.append(relative)
-            except Exception:
-                continue
+            if len(matches) >= int(max_results) or scanned >= max_files:
+                break
 
-    return {"ok": True, "query": query, "matches": matches[:50]}
+    return {
+        "ok": True,
+        "query": clean_query,
+        "root": display_path(search_root),
+        "matches": matches[: int(max_results)],
+        "scanned": scanned,
+        "truncated": scanned >= max_files or len(matches) >= int(max_results),
+    }

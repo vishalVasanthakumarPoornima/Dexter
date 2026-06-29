@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<rss version="2.0">
+  <channel>
+    <title>Example Jobs</title>
+    <item>
+      <title>Backend Engineer Intern at FeedCo</title>
+      <link>https://feed.example/jobs/801</link>
+      <description>Work on FastAPI, SQL, and automation for job feeds.</description>
+      <pubDate>Fri, 19 Jun 2026 10:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
