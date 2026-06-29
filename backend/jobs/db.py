@@ -29,7 +29,7 @@ def _configure_sqlite(dbapi_connection, _connection_record) -> None:
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA busy_timeout=5000")
+    cursor.execute("PRAGMA busy_timeout=30000")
     cursor.close()
 
 
@@ -44,7 +44,7 @@ def get_engine() -> Engine:
         if str(db_file) != ":memory:":
             db_file.parent.mkdir(parents=True, exist_ok=True)
 
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
+    connect_args = {"check_same_thread": False, "timeout": 30} if url.startswith("sqlite") else {}
     _engine = create_engine(url, future=True, connect_args=connect_args)
     _engine_url = url
     if url.startswith("sqlite"):

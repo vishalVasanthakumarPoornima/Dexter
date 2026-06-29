@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -47,6 +48,14 @@ class JobsAPITests(unittest.TestCase):
         packet = self.client.post(f"/api/jobs/{job_id}/packet", json={})
         self.assertEqual(packet.status_code, 200)
         self.assertTrue(packet.json()["ok"])
+
+        with patch("backend.jobs.resume_latex.find_latex_compiler", return_value=None):
+            export = self.client.get(f"/api/jobs/{job_id}/resume-export?format=pdf")
+        self.assertEqual(export.status_code, 200)
+        self.assertIn("attachment", export.headers["content-disposition"])
+        self.assertEqual(export.headers["x-dexter-resume-compiled"], "false")
+        self.assertIn(b"oneside", export.content)
+        self.assertIn(b"Jake", export.content)
 
         apply = self.client.post(f"/api/jobs/{job_id}/apply-session?demo=true")
         self.assertEqual(apply.status_code, 200)

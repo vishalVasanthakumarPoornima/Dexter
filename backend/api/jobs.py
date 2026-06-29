@@ -3,12 +3,14 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Query
+from fastapi.responses import FileResponse
 
 from backend.jobs.db import init_db
 from backend.jobs.reports import generate_daily_report
 from backend.jobs.schemas import ApprovalRequest, BulkOpenRequest, IngestRequest, JobQuery, ManualLinkRequest, PacketRequest, SourceUpdateRequest
 from backend.jobs.service import (
     approve_job,
+    export_tailored_resume,
     generate_packet_for_job,
     get_job,
     ingest_jobs,
@@ -123,6 +125,25 @@ def jobs_score(profile_id: int | None = None):
 @router.post("/open-applications")
 def jobs_open_applications(req: BulkOpenRequest):
     return open_application_links(job_ids=req.job_ids, limit=req.limit)
+
+
+@router.get("/{job_id}/resume-export")
+def jobs_resume_export(job_id: int, profile_id: int | None = None, file_format: str = Query(default="pdf", alias="format")):
+    result = export_tailored_resume(job_id=job_id, profile_id=profile_id, prefer_pdf=file_format.lower() != "tex")
+    if not result.get("ok"):
+        return result
+    headers = {
+        "X-Dexter-Resume-Compiled": "true" if result.get("compiled") else "false",
+        "X-Dexter-Latex-Compiler": str(result.get("compiler") or ""),
+        "X-Dexter-Compile-Error": str(result.get("compile_error") or "")[:500],
+        "Access-Control-Expose-Headers": "Content-Disposition, X-Dexter-Resume-Compiled, X-Dexter-Latex-Compiler, X-Dexter-Compile-Error",
+    }
+    return FileResponse(
+        result["path"],
+        media_type=result["media_type"],
+        filename=result["filename"],
+        headers=headers,
+    )
 
 
 @router.get("/{job_id}")

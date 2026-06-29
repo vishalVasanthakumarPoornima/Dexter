@@ -15,6 +15,8 @@ Built:
 - Structured live-search controls now drive backend filtering for role, term, cohort year, date posted, employment type, source, score, and work mode.
 - Bulk Open is handled by a local backend endpoint and reports open failures instead of relying on fragile frontend popup behavior.
 - Approval now generates a per-job `tailored_resume_draft.md` artifact plus resume suggestions and a cover-letter draft; the base resume is not modified.
+- Download Resume streams a temporary one-sided Jake's Resume LaTeX export through the browser download/save flow instead of only saving inside the Dexter repo.
+- `/api/jobs/overview` is read-only now; source-health writes were moved out of that hot path to avoid SQLite `database is locked` failures during concurrent Jobs requests.
 
 Known local runtime artifacts:
 

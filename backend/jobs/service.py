@@ -29,6 +29,7 @@ from backend.jobs.models import (
 )
 from backend.jobs.normalization import prepare_job
 from backend.jobs.reports import generate_daily_report
+from backend.jobs.resume_latex import export_jake_resume
 from backend.jobs.schemas import JobQuery
 from backend.jobs.scoring import score_job
 from backend.jobs.source_registry import build_adapters
@@ -96,6 +97,48 @@ def ensure_job_sources(session: Session, config: dict | None = None) -> list[Job
         sources.append(source)
     session.flush()
     return sources
+
+
+def _configured_source_payloads(config: dict | None = None) -> list[dict[str, Any]]:
+    cfg = config or load_jobs_config()
+    payloads = []
+    for name, adapter in build_adapters(cfg, include_disabled=True).items():
+        health = adapter.validate_config()
+        source_cfg = cfg.get("sources", {}).get(name, {})
+        payloads.append(
+            {
+                "id": name,
+                "name": name,
+                "type": getattr(adapter, "source_type", "adapter"),
+                "enabled": bool(source_cfg.get("enabled", True)),
+                "health_status": health.status,
+                "last_run_at": None,
+                "last_error": "" if health.ok else health.message,
+                "requires_api_key": health.requires_api_key,
+                "restricted_mode": health.restricted_mode,
+            }
+        )
+    return sorted(payloads, key=lambda item: item["name"])
+
+
+def _source_payloads(session: Session) -> list[dict[str, Any]]:
+    active_sources = session.query(JobSource).order_by(JobSource.name).all()
+    if not active_sources:
+        return _configured_source_payloads()
+    return [
+        {
+            "id": src.id,
+            "name": src.name,
+            "type": src.type,
+            "enabled": src.enabled,
+            "health_status": src.health_status,
+            "last_run_at": _serialize_dt(src.last_run_at),
+            "last_error": src.last_error,
+            "requires_api_key": src.requires_api_key,
+            "restricted_mode": src.restricted_mode,
+        }
+        for src in active_sources
+    ]
 
 
 def _upsert_job(session: Session, job_create: JobCreate) -> tuple[Job, bool, bool]:
@@ -346,6 +389,17 @@ def generate_packet_for_job(job_id: int, profile_id: int | None = None, session:
             active_session.close()
 
 
+def export_tailored_resume(job_id: int, profile_id: int | None = None, prefer_pdf: bool = True, session: Session | None = None) -> dict[str, Any]:
+    active_session, should_close = _session_or_new(session)
+    try:
+        get_or_create_default_profile(active_session)
+        result = export_jake_resume(active_session, job_id=job_id, profile_id=profile_id, prefer_pdf=prefer_pdf)
+        return result
+    finally:
+        if should_close:
+            active_session.close()
+
+
 def run_daily(demo: bool = False) -> dict[str, Any]:
     ingest = ingest_jobs(source="all", query=JobQuery(keywords="Software Engineer Intern 2027", demo=demo), demo=demo)
     scoring = score_jobs()
@@ -567,7 +621,6 @@ def serialize_browser_session(item: BrowserApplySession) -> dict:
 def overview(session: Session | None = None) -> dict[str, Any]:
     active_session, should_close = _session_or_new(session)
     try:
-        ensure_job_sources(active_session)
         active_jobs = active_session.query(Job).filter(Job.status != "archived")
         total = active_jobs.count()
         new_jobs = active_session.query(Job).filter(Job.status == "new").count()
@@ -582,20 +635,7 @@ def overview(session: Session | None = None) -> dict[str, Any]:
             .limit(5)
             .all()
         )
-        sources = [
-            {
-                "id": src.id,
-                "name": src.name,
-                "type": src.type,
-                "enabled": src.enabled,
-                "health_status": src.health_status,
-                "last_run_at": _serialize_dt(src.last_run_at),
-                "last_error": src.last_error,
-                "requires_api_key": src.requires_api_key,
-                "restricted_mode": src.restricted_mode,
-            }
-            for src in active_session.query(JobSource).order_by(JobSource.name).all()
-        ]
+        sources = _source_payloads(active_session)
         runs = active_session.query(IngestionRun).order_by(desc(IngestionRun.started_at)).limit(10).all()
         return {
             "ok": True,

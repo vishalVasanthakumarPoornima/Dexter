@@ -16,6 +16,7 @@ Dashboard workflow:
 - **Refresh** reloads the current filtered feed without running a new external search.
 - **Bulk Open** asks the local backend to open application links for the current filtered feed, capped by the Bulk Open input.
 - **Approve + Tailor** creates or updates an approved application packet with `tailored_resume_draft.md`, resume suggestions, and a cover-letter draft. The base resume is not modified.
+- **Download Resume** streams a one-sided Jake's Resume LaTeX export as a browser download. If `pdflatex`, `xelatex`, or `tectonic` is installed, Dexter downloads a PDF; otherwise it downloads the `.tex` source.
 - **Prep Form** starts a supervised form-preparation session and still stops before any final submit.
 
 Core workflow:

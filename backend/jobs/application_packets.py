@@ -113,7 +113,7 @@ def build_packet_artifacts(job: Job, profile: ApplicationProfile, score: JobScor
         "resume_variant_path": str(resume_path),
         "cover_letter_path": str(cover_path),
         "short_answers_json": short_answers,
-        "resume_diff_summary": f"Generated tailored resume draft plus suggestions; base resume was not modified. Suggestions: {suggestions_path}",
+        "resume_diff_summary": f"Generated internal packet notes; use Download Resume for the Jake-template LaTeX/PDF export. Base resume was not modified. Suggestions: {suggestions_path}",
         "recommendation": score.recommendation if score else "manual_review",
         "confidence": score.confidence if score else 0.5,
         "blockers": blockers,

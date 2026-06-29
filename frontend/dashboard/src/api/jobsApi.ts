@@ -36,6 +36,27 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 }
 
+function attachmentFilename(headers: Headers, fallback: string) {
+  const disposition = headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/i);
+  return match?.[1] || fallback;
+}
+
+export async function downloadTailoredResume(jobId: number) {
+  const response = await fetch(`${API_BASE}/api/jobs/${jobId}/resume-export?format=pdf`);
+  if (!response.ok) {
+    throw new Error(`Resume export failed: ${response.status}`);
+  }
+  const blob = await response.blob();
+  return {
+    blob,
+    filename: attachmentFilename(response.headers, `dexter-job-${jobId}-jake-resume.tex`),
+    compiled: response.headers.get("X-Dexter-Resume-Compiled") === "true",
+    compiler: response.headers.get("X-Dexter-Latex-Compiler") || "",
+    compileError: response.headers.get("X-Dexter-Compile-Error") || "",
+  };
+}
+
 export function getJobsOverview() {
   return request<JobsOverview>("/api/jobs/overview");
 }

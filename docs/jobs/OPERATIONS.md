@@ -30,4 +30,10 @@ Reports:
 - Markdown: `data/reports/latest_jobs_report.md`
 - JSON: `data/reports/latest_jobs_report.json`
 
+Resume export:
+
+- The Jobs dashboard **Download Resume** action returns an attachment through the browser.
+- Install `pdflatex`, `xelatex`, or `tectonic` for automatic PDF output.
+- Without a compiler, Dexter downloads the generated Jake-template `.tex` file.
+
 Runtime logs and artifacts are ignored by git. Review `data/raw_payloads/` when debugging source normalization.

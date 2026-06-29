@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Check,
+  Download,
   ExternalLink,
   FileText,
   Filter,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import {
   approveJob,
+  downloadTailoredResume,
   generatePacket,
   getJobDetail,
   getJobs,
@@ -39,6 +41,13 @@ function classForRecommendation(value?: string) {
   if (value === "manual_review") return "manual";
   return "maybe";
 }
+
+type SavePickerWindow = Window & {
+  showSaveFilePicker?: (options: {
+    suggestedName?: string;
+    types?: Array<{ description: string; accept: Record<string, string[]> }>;
+  }) => Promise<{ createWritable: () => Promise<{ write: (blob: Blob) => Promise<void>; close: () => Promise<void> }> }>;
+};
 
 export default function JobsPage({ onSendMessage }: JobsPageProps) {
   const [overview, setOverview] = useState<JobsOverview | null>(null);
@@ -148,12 +157,53 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
 
   async function askDexterForStatus() {
     setBusy(true);
-    setStatus("Asking Dexter for job application status...");
+    setStatus("Asking Dexter to summarize Jobs OS status in the main chat...");
     try {
-      await onSendMessage("job application status");
-      setStatus("Asked Dexter for job application status.");
+      await onSendMessage("Summarize my Jobs OS status: searches, top matches, approvals, generated packets, and manual blockers.");
+      setStatus("Sent a Jobs OS status request to Dexter chat.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Ask Dexter failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveTailoredResume(jobId: number) {
+    setBusy(true);
+    setStatus("Generating Jake-template LaTeX resume export...");
+    try {
+      const exportFile = await downloadTailoredResume(jobId);
+      const saveWindow = window as SavePickerWindow;
+      const isPdf = exportFile.filename.toLowerCase().endsWith(".pdf");
+      if (saveWindow.showSaveFilePicker) {
+        const handle = await saveWindow.showSaveFilePicker({
+          suggestedName: exportFile.filename,
+          types: [
+            {
+              description: isPdf ? "PDF resume" : "LaTeX resume",
+              accept: isPdf ? { "application/pdf": [".pdf"] } : { "application/x-tex": [".tex"] },
+            },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(exportFile.blob);
+        await writable.close();
+      } else {
+        const url = URL.createObjectURL(exportFile.blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = exportFile.filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+      const compileText = exportFile.compiled
+        ? `Compiled with ${exportFile.compiler || "LaTeX"}.`
+        : "Downloaded .tex because no LaTeX compiler is installed locally.";
+      setStatus(`Resume export ready: ${exportFile.filename}. ${compileText}`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Resume export failed.");
     } finally {
       setBusy(false);
     }
@@ -208,8 +258,8 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
             <button disabled={busy || !jobs.length} onClick={bulkOpenApplications}>
               <ExternalLink size={14} /> Bulk Open
             </button>
-            <button disabled={busy} onClick={askDexterForStatus}>
-              <FileText size={14} /> Ask Dexter
+            <button disabled={busy} onClick={askDexterForStatus} title="Send a Jobs OS status question to Dexter chat.">
+              <FileText size={14} /> Ask Status
             </button>
           </div>
         </div>
@@ -343,6 +393,7 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
             sessions={detail?.browser_sessions ?? []}
             busy={busy}
             runAction={runAction}
+            saveTailoredResume={saveTailoredResume}
             refreshJob={() => selectedJobId ? selectJob(selectedJobId) : Promise.resolve()}
           />
         </div>
@@ -395,12 +446,14 @@ function JobDetailPanel({
   sessions,
   busy,
   runAction,
+  saveTailoredResume,
   refreshJob,
 }: {
   job: JobItem | null;
   sessions: BrowserApplySession[];
   busy: boolean;
   runAction: (label: string, action: () => Promise<Record<string, unknown>>) => Promise<void>;
+  saveTailoredResume: (jobId: number) => Promise<void>;
   refreshJob: () => Promise<void>;
 }) {
   if (!job) {
@@ -428,6 +481,9 @@ function JobDetailPanel({
         </button>
         <button disabled={busy} onClick={() => runAction("Approve and tailor resume", () => approveJob(job.id).then(async (result) => { await refreshJob(); return result; }))}>
           <Check size={14} /> Approve + Tailor
+        </button>
+        <button disabled={busy} onClick={() => saveTailoredResume(job.id)}>
+          <Download size={14} /> Download Resume
         </button>
         <button disabled={busy} onClick={() => runAction("Skip job", () => skipJob(job.id))}>
           <SkipForward size={14} /> Skip
@@ -467,7 +523,7 @@ function JobDetailPanel({
         <div className="jobs-detail-section">
           <h4>Application Packet</h4>
           <p>{job.packet.resume_diff_summary}</p>
-          <code>{job.packet.resume_variant_path}</code>
+          <p>Resume export: use Download Resume to save a Jake-template LaTeX/PDF file outside the Dexter project.</p>
           <code>{job.packet.cover_letter_path}</code>
           <p>Approval: {job.packet.approval?.status ?? "requested"}</p>
         </div>
