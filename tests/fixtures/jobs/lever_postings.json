@@ -1,0 +1,31 @@
+[
+  {
+    "id": "lev-201",
+    "text": "Security Engineer Intern",
+    "hostedUrl": "https://jobs.lever.co/sentinel/lev-201",
+    "applyUrl": "https://jobs.lever.co/sentinel/lev-201/apply",
+    "createdAt": "2026-06-18T15:30:00Z",
+    "categories": {
+      "team": "Sentinel Labs",
+      "location": "San Jose, CA",
+      "commitment": "Internship"
+    },
+    "descriptionPlain": "Help build security automation, threat analysis tools, Python services, and dashboards.",
+    "lists": [{"text": "Requirements", "content": "<li>Python</li><li>Cybersecurity</li><li>Linux</li>"}],
+    "salaryRange": {"min": 40, "max": 55}
+  },
+  {
+    "id": "lev-202",
+    "text": "New Grad Full Stack Engineer",
+    "hostedUrl": "https://jobs.lever.co/buildbox/lev-202",
+    "applyUrl": "https://jobs.lever.co/buildbox/lev-202/apply",
+    "createdAt": "2026-06-16T15:30:00Z",
+    "categories": {
+      "team": "BuildBox",
+      "location": "Fremont, CA",
+      "commitment": "Full-time"
+    },
+    "descriptionPlain": "React, TypeScript, API development, and product engineering for operations tools.",
+    "lists": []
+  }
+]

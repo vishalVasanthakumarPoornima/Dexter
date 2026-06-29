@@ -8,3 +8,15 @@ langchain
 langchain-community
 qdrant-client
 sentence-transformers
+python-multipart
+faster-whisper
+ddgs
+pyautogui
+pyperclip
+Pillow
+send2trash
+youtube-transcript-api
+playwright
+SQLAlchemy
+PyYAML
+pypdf

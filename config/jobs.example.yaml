@@ -1,0 +1,82 @@
+profile:
+  name:
+  email:
+  phone:
+  location:
+  github:
+  linkedin:
+  portfolio:
+  resume_path:
+  work_authorization:
+  sponsorship_needed:
+
+targets:
+  roles:
+    - Software Engineer Intern
+    - AI Engineer Intern
+    - Security Engineer Intern
+    - Backend Engineer Intern
+  locations:
+    - Remote
+    - Bay Area
+    - San Jose
+    - San Francisco
+    - Fremont
+  include_remote: true
+  include_hybrid: true
+  include_onsite: true
+  employment_types:
+    - internship
+    - new_grad
+    - full_time
+
+limits:
+  max_jobs_per_source: 100
+  max_ranked_jobs: 50
+  max_application_packets_per_run: 10
+  max_apply_sessions_per_day: 5
+
+safety:
+  auto_submit: false
+  require_approval_before_submit: true
+  restricted_sources_manual_only: true
+  captcha_bypass: false
+
+sources:
+  greenhouse:
+    enabled: true
+    companies: []
+  lever:
+    enabled: true
+    companies: []
+  usajobs:
+    enabled: false
+    api_key_env: USAJOBS_API_KEY
+    email_env: USAJOBS_EMAIL
+  adzuna:
+    enabled: false
+    app_id_env: ADZUNA_APP_ID
+    app_key_env: ADZUNA_APP_KEY
+  remotive:
+    enabled: true
+  github_lists:
+    enabled: true
+    repos:
+      - https://github.com/vanshb03/Summer2027-Internships
+  rss:
+    enabled: true
+    feeds: []
+  manual_link:
+    enabled: true
+  company_careers:
+    enabled: true
+    companies: []
+  web_discovery:
+    enabled: true
+    queries: []
+  restricted_manual:
+    enabled: true
+    domains:
+      - linkedin.com
+      - indeed.com
+      - glassdoor.com
