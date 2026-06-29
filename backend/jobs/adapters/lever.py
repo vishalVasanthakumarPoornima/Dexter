@@ -23,7 +23,8 @@ class LeverAdapter:
 
         jobs: list[RawJob] = []
         for company in self.config.get("companies") or []:
-            url = f"https://api.lever.co/v0/postings/{company}?mode=json"
+            limit = max(1, min(query.max_results or 100, 100))
+            url = f"https://api.lever.co/v0/postings/{company}?mode=json&limit={limit}"
             payload = fetch_json(url)
             for item in payload[: query.max_results]:
                 jobs.append(RawJob(source=self.name, payload={**item, "site_slug": company}, source_url=url))
