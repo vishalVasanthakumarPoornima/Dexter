@@ -61,6 +61,25 @@ DEFAULT_JOBS_CONFIG: dict[str, Any] = {
             "app_key_env": "ADZUNA_APP_KEY",
         },
         "remotive": {"enabled": True},
+        "ashby": {"enabled": True, "boards": []},
+        "smartrecruiters": {"enabled": True, "companies": []},
+        "recruitee": {"enabled": True, "companies": []},
+        "themuse": {"enabled": True, "categories": []},
+        "arbeitnow": {"enabled": True},
+        "careerjet": {
+            "enabled": False,
+            "api_key_env": "CAREERJET_API_KEY",
+            "locale_code": "en_US",
+        },
+        "jooble": {
+            "enabled": False,
+            "api_key_env": "JOOBLE_API_KEY",
+        },
+        "brave_search": {
+            "enabled": False,
+            "api_key_env": "BRAVE_SEARCH_API_KEY",
+            "queries": [],
+        },
         "github_lists": {
             "enabled": True,
             "repos": ["https://github.com/vanshb03/Summer2027-Internships"],

@@ -59,6 +59,31 @@ sources:
     app_key_env: ADZUNA_APP_KEY
   remotive:
     enabled: true
+  ashby:
+    enabled: true
+    boards: []
+  smartrecruiters:
+    enabled: true
+    companies: []
+  recruitee:
+    enabled: true
+    companies: []
+  themuse:
+    enabled: true
+    categories: []
+  arbeitnow:
+    enabled: true
+  careerjet:
+    enabled: false
+    api_key_env: CAREERJET_API_KEY
+    locale_code: en_US
+  jooble:
+    enabled: false
+    api_key_env: JOOBLE_API_KEY
+  brave_search:
+    enabled: false
+    api_key_env: BRAVE_SEARCH_API_KEY
+    queries: []
   github_lists:
     enabled: true
     repos:

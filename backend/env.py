@@ -13,4 +13,4 @@ def load_env() -> None:
     except Exception:
         return
 
-    load_dotenv(ENV_PATH, override=True)
+    load_dotenv(ENV_PATH, override=False)

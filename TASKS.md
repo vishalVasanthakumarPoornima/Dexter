@@ -3,7 +3,7 @@
 ## Done
 
 - SQLite-backed Jobs OS schema.
-- Source adapters for Greenhouse, Lever, USAJOBS, Adzuna, Remotive, GitHub lists, RSS, manual links, company career discovery, web discovery, and restricted/manual links.
+- Source adapters for Greenhouse, Lever, USAJOBS, Adzuna, Remotive, Ashby, SmartRecruiters, Recruitee, The Muse, Arbeitnow, Careerjet, Jooble, Brave Search, GitHub lists, RSS, manual links, company career discovery, web discovery, and restricted/manual links.
 - Fixture-backed demo mode.
 - Normalization and dedupe.
 - Transparent scoring.
@@ -19,6 +19,7 @@
 ## Next
 
 - Add deeper live Greenhouse/Lever company catalogs.
+- Add broader no-key company identifier lists for Ashby, SmartRecruiters, and Recruitee.
 - Add source-specific rate limiting and ETag caching.
 - Add real Playwright fill actions for selected ATS pages after more supervised testing.
 - Add frontend E2E screenshots and visual regression.

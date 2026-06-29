@@ -1,0 +1,14 @@
+{
+  "jobs": [
+    {
+      "title": "Backend Engineer Intern",
+      "company": "CareerJet Fixture Co",
+      "locations": "Remote, United States",
+      "description": "Internship building backend APIs in Python and SQL.",
+      "url": "https://www.careerjet.com/job/backend-engineer-intern",
+      "date": "2026-06-22T10:00:00Z",
+      "salary_min": 30,
+      "salary_max": 45
+    }
+  ]
+}

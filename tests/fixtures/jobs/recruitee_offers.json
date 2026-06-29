@@ -1,0 +1,17 @@
+{
+  "offers": [
+    {
+      "id": 501,
+      "slug": "backend-engineer-intern",
+      "title": "Backend Engineer Intern",
+      "company_name": "Recruitee Fixture Co",
+      "location": "Remote",
+      "remote": true,
+      "department": "Engineering",
+      "description": "<p>Work on API services, PostgreSQL models, and internal automation.</p>",
+      "requirements": "<ul><li>Python experience</li><li>Interest in distributed systems</li></ul>",
+      "careers_url": "https://fixture.recruitee.com/o/backend-engineer-intern",
+      "created_at": "2026-06-21T09:30:00Z"
+    }
+  ]
+}

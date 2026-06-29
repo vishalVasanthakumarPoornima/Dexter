@@ -1,0 +1,46 @@
+{
+  "content": [
+    {
+      "id": "744000000000001",
+      "name": "Software Engineering Intern",
+      "company": {
+        "identifier": "FixtureSmart",
+        "name": "Fixture SmartRecruiters"
+      },
+      "releasedDate": "2026-06-24T10:00:11.853Z",
+      "location": {
+        "city": "Fremont",
+        "region": "CA",
+        "country": "us",
+        "remote": false,
+        "hybrid": true,
+        "fullLocation": "Fremont, CA, United States"
+      },
+      "department": {
+        "label": "Engineering"
+      },
+      "function": {
+        "label": "Engineering"
+      },
+      "typeOfEmployment": {
+        "id": "intern",
+        "label": "Internship"
+      },
+      "experienceLevel": {
+        "label": "Entry Level"
+      },
+      "postingUrl": "https://jobs.smartrecruiters.com/FixtureSmart/744000000000001-software-engineering-intern",
+      "applyUrl": "https://jobs.smartrecruiters.com/FixtureSmart/744000000000001-software-engineering-intern?oga=true",
+      "jobAd": {
+        "sections": {
+          "jobDescription": {
+            "text": "<p>Build frontend and backend features for a recruiting platform.</p>"
+          },
+          "qualifications": {
+            "text": "<ul><li>JavaScript or Python</li><li>Interest in cloud systems</li></ul>"
+          }
+        }
+      }
+    }
+  ]
+}

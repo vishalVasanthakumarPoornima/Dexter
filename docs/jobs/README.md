@@ -19,6 +19,23 @@ python -m backend.app.jobs.cli generate-packets
 python -m backend.app.jobs.cli report
 ```
 
+No-key live sources available immediately:
+
+- Remotive
+- The Muse
+- Arbeitnow
+- Greenhouse/Lever/Ashby/SmartRecruiters/Recruitee after you add company board identifiers
+- GitHub lists
+- RSS feeds
+
+Key-gated optional sources:
+
+- USAJOBS: `USAJOBS_API_KEY`, `USAJOBS_EMAIL`
+- Adzuna: `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`
+- Careerjet: `CAREERJET_API_KEY`
+- Jooble: `JOOBLE_API_KEY`
+- Brave Search: `BRAVE_SEARCH_API_KEY`
+
 Demo mode uses fixtures and requires no API keys:
 
 ```bash

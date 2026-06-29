@@ -32,7 +32,24 @@ from backend.profile.profile_service import get_or_create_default_profile
 from backend.utils.logger import log_action
 
 
-DEMO_SOURCES = ["greenhouse", "lever", "remotive", "github_lists", "rss", "usajobs", "adzuna", "company_careers"]
+DEMO_SOURCES = [
+    "greenhouse",
+    "lever",
+    "remotive",
+    "ashby",
+    "smartrecruiters",
+    "recruitee",
+    "themuse",
+    "arbeitnow",
+    "careerjet",
+    "jooble",
+    "brave_search",
+    "github_lists",
+    "rss",
+    "usajobs",
+    "adzuna",
+    "company_careers",
+]
 
 
 def _session_or_new(session: Session | None = None) -> tuple[Session, bool]:

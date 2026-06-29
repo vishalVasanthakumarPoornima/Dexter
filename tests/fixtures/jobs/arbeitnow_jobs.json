@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "slug": "ai-engineering-intern-remote-1001",
+      "company_name": "EuroAI Labs",
+      "title": "AI Engineering Intern",
+      "description": "<p>Build backend services and evaluation tooling for AI products. Remote friendly internship.</p>",
+      "remote": true,
+      "url": "https://www.arbeitnow.com/jobs/companies/euroai/ai-engineering-intern-remote-1001",
+      "tags": ["Engineering", "AI"],
+      "job_types": ["internship"],
+      "location": "Berlin",
+      "created_at": 1782700000
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "page": 0,
+  "page_count": 1,
+  "results": [
+    {
+      "contents": "<p>Build AI developer tools, services, and evaluation pipelines as a summer intern.</p>",
+      "name": "AI Tools Engineering Intern",
+      "publication_date": "2026-06-25T00:47:22Z",
+      "short_name": "ai-tools-engineering-intern",
+      "id": 21895054,
+      "locations": [
+        {
+          "name": "San Francisco, CA"
+        }
+      ],
+      "categories": [
+        {
+          "name": "Engineering"
+        }
+      ],
+      "levels": [
+        {
+          "name": "Internship",
+          "short_name": "internship"
+        }
+      ],
+      "refs": {
+        "landing_page": "https://www.themuse.com/jobs/fixture/ai-tools-engineering-intern"
+      },
+      "company": {
+        "id": 15001041,
+        "short_name": "fixture-ai",
+        "name": "Fixture AI"
+      }
+    }
+  ]
+}

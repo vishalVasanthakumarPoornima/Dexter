@@ -1,9 +1,18 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
+from backend.jobs.adapters.arbeitnow import ArbeitnowAdapter
+from backend.jobs.adapters.ashby import AshbyAdapter
+from backend.jobs.adapters.brave_search import BraveSearchAdapter
+from backend.jobs.adapters.careerjet import CareerjetAdapter
 from backend.jobs.adapters.github_lists import parse_markdown_jobs
+from backend.jobs.adapters.jooble import JoobleAdapter
+from backend.jobs.adapters.recruitee import RecruiteeAdapter
 from backend.jobs.adapters.restricted_manual import RestrictedManualAdapter
+from backend.jobs.adapters.smartrecruiters import SmartRecruitersAdapter
+from backend.jobs.adapters.themuse import TheMuseAdapter
 from backend.jobs.browser.form_analyzer import analyze_form_file
 from backend.jobs.browser.form_filler import planned_field_values
 from backend.jobs.db import reset_engine_for_tests
@@ -87,6 +96,37 @@ class JobsOSTests(unittest.TestCase):
         rows = parse_markdown_jobs(markdown, "fixture://test")
         self.assertEqual(rows[0]["company"], "A")
         self.assertEqual(rows[0]["apply_url"], "https://example.com/a")
+
+    def test_expanded_source_adapters_normalize_fixture_jobs(self):
+        adapters = [
+            AshbyAdapter(),
+            SmartRecruitersAdapter(),
+            RecruiteeAdapter(),
+            TheMuseAdapter(),
+            ArbeitnowAdapter(),
+            CareerjetAdapter(),
+            JoobleAdapter(),
+            BraveSearchAdapter(),
+        ]
+
+        for adapter in adapters:
+            with self.subTest(adapter=adapter.name):
+                raw_jobs = adapter.fetch_jobs(JobQuery(demo=True, max_results=2))
+                self.assertGreater(len(raw_jobs), 0)
+                job = adapter.normalize(raw_jobs[0])
+                self.assertTrue(job.title)
+                self.assertTrue(job.apply_url)
+                self.assertEqual(job.source, adapter.name)
+                self.assertTrue(job.manual_required)
+
+    def test_key_gated_sources_report_auth_required(self):
+        with patch.dict(
+            os.environ,
+            {"CAREERJET_API_KEY": "", "JOOBLE_API_KEY": "", "BRAVE_SEARCH_API_KEY": ""},
+        ):
+            self.assertEqual(CareerjetAdapter().validate_config().status, "auth_required")
+            self.assertEqual(JoobleAdapter().validate_config().status, "auth_required")
+            self.assertEqual(BraveSearchAdapter().validate_config().status, "auth_required")
 
     def test_restricted_source_is_manual_only(self):
         adapter = RestrictedManualAdapter({"domains": ["linkedin.com"]})

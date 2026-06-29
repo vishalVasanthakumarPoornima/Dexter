@@ -48,7 +48,12 @@ USAJOBS_API_KEY=
 USAJOBS_EMAIL=
 ADZUNA_APP_ID=
 ADZUNA_APP_KEY=
+CAREERJET_API_KEY=
+JOOBLE_API_KEY=
+BRAVE_SEARCH_API_KEY=
 ```
+
+Public no-key sources include Remotive, The Muse, Arbeitnow, GitHub lists, RSS feeds, and configured Greenhouse/Lever/Ashby/SmartRecruiters/Recruitee company feeds.
 
 Jobs OS never auto-submits external applications. Restricted sources such as LinkedIn, Indeed, and Glassdoor are manual-only or supervised-link sources.
 
