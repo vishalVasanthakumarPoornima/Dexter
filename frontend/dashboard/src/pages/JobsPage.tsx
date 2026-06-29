@@ -6,6 +6,7 @@ import {
   Filter,
   Play,
   RefreshCw,
+  Search,
   ShieldCheck,
   SkipForward,
   Sparkles,
@@ -18,6 +19,7 @@ import {
   getJobsOverview,
   ingestDemoJobs,
   runDemoDaily,
+  runLiveSearch,
   scoreJobs,
   skipJob,
   startDemoApplySession,
@@ -111,7 +113,10 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
               <Play size={14} /> Demo
             </button>
             <button disabled={busy} onClick={() => runAction("Ingest demo jobs", ingestDemoJobs)}>
-              <Sparkles size={14} /> Ingest
+              <Sparkles size={14} /> Demo Ingest
+            </button>
+            <button disabled={busy} onClick={() => runAction("Live job search", runLiveSearch)}>
+              <Search size={14} /> Live Search
             </button>
             <button disabled={busy} onClick={() => runAction("Score jobs", scoreJobs)}>
               <RefreshCw size={14} /> Score
@@ -171,7 +176,7 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
                   </b>
                 </button>
               ))}
-              {!jobs.length && <p className="jobs-empty">No jobs loaded. Run Demo to populate the vertical slice.</p>}
+              {!jobs.length && <p className="jobs-empty">No jobs loaded. Run Demo or Live Search to populate the feed.</p>}
             </div>
           </section>
 

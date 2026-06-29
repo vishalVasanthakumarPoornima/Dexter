@@ -82,7 +82,13 @@ DEFAULT_JOBS_CONFIG: dict[str, Any] = {
         },
         "github_lists": {
             "enabled": True,
-            "repos": ["https://github.com/vanshb03/Summer2027-Internships"],
+            "repos": [
+                "https://github.com/SimplifyJobs/Summer2026-Internships",
+                "https://github.com/SimplifyJobs/New-Grad-Positions",
+                "https://github.com/SpeedyApply/2026-SWE-College-Jobs",
+                "https://github.com/pittcsc/Summer2026-Internships",
+                "https://github.com/vanshb03/Summer2027-Internships",
+            ],
         },
         "rss": {"enabled": True, "feeds": []},
         "manual_link": {"enabled": True},

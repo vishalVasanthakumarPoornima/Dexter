@@ -437,16 +437,18 @@ def list_jobs(
 ) -> dict[str, Any]:
     active_session, should_close = _session_or_new(session)
     try:
-        query = active_session.query(Job).order_by(desc(Job.discovered_at)).limit(limit)
+        query = active_session.query(Job).order_by(desc(Job.discovered_at))
         if status:
             query = query.filter(Job.status == status)
+        else:
+            query = query.filter(Job.status != "archived")
         if source:
             query = query.filter(Job.source == source)
         if q:
             like = f"%{q}%"
             query = query.filter((Job.title.ilike(like)) | (Job.company.ilike(like)) | (Job.description.ilike(like)))
         jobs = []
-        for job in query.all():
+        for job in query.limit(limit).all():
             score = active_session.query(JobScore).filter(JobScore.job_id == job.id).order_by(desc(JobScore.created_at)).first()
             if min_score is not None and (not score or score.overall_score < min_score):
                 continue
@@ -497,14 +499,16 @@ def overview(session: Session | None = None) -> dict[str, Any]:
     active_session, should_close = _session_or_new(session)
     try:
         ensure_job_sources(active_session)
-        total = active_session.query(Job).count()
+        active_jobs = active_session.query(Job).filter(Job.status != "archived")
+        total = active_jobs.count()
         new_jobs = active_session.query(Job).filter(Job.status == "new").count()
         packets = active_session.query(Approval).filter(Approval.status == "requested").count()
-        manual = active_session.query(Job).filter(Job.manual_required.is_(True)).count()
+        manual = active_jobs.filter(Job.manual_required.is_(True)).count()
         submitted = 0
         top_scores = (
             active_session.query(Job, JobScore)
             .join(JobScore, JobScore.job_id == Job.id)
+            .filter(Job.status != "archived")
             .order_by(desc(JobScore.overall_score))
             .limit(5)
             .all()
@@ -530,7 +534,7 @@ def overview(session: Session | None = None) -> dict[str, Any]:
                 "total_jobs": total,
                 "new_jobs_today": new_jobs,
                 "top_matches": len(top_scores),
-                "ready_to_apply": active_session.query(JobScore).filter(JobScore.recommendation == "apply").count(),
+                "ready_to_apply": active_session.query(JobScore).join(Job).filter(Job.status != "archived", JobScore.recommendation == "apply").count(),
                 "needs_approval": packets,
                 "blocked_manual": manual,
                 "applications_submitted": submitted,

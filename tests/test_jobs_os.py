@@ -7,7 +7,7 @@ from backend.jobs.adapters.arbeitnow import ArbeitnowAdapter
 from backend.jobs.adapters.ashby import AshbyAdapter
 from backend.jobs.adapters.brave_search import BraveSearchAdapter
 from backend.jobs.adapters.careerjet import CareerjetAdapter
-from backend.jobs.adapters.github_lists import parse_markdown_jobs
+from backend.jobs.adapters.github_lists import GitHubListsAdapter, parse_markdown_jobs
 from backend.jobs.adapters.jooble import JoobleAdapter
 from backend.jobs.adapters.recruitee import RecruiteeAdapter
 from backend.jobs.adapters.restricted_manual import RestrictedManualAdapter
@@ -26,6 +26,7 @@ from backend.jobs.service import (
     list_jobs,
     run_daily,
     score_jobs,
+    set_job_status,
     start_apply_session,
     submit_approved,
 )
@@ -96,6 +97,21 @@ class JobsOSTests(unittest.TestCase):
         rows = parse_markdown_jobs(markdown, "fixture://test")
         self.assertEqual(rows[0]["company"], "A")
         self.assertEqual(rows[0]["apply_url"], "https://example.com/a")
+
+    def test_github_repo_candidates_include_dev_branch_fallback(self):
+        adapter = GitHubListsAdapter()
+        candidates = adapter._raw_candidates("https://github.com/vanshb03/Summer2027-Internships")
+        self.assertIn("https://raw.githubusercontent.com/vanshb03/Summer2027-Internships/dev/README.md", candidates)
+
+    def test_default_job_list_hides_archived_jobs(self):
+        run_daily(demo=True)
+        target_id = list_jobs()["jobs"][0]["id"]
+        set_job_status(target_id, "archived")
+
+        default_ids = {job["id"] for job in list_jobs()["jobs"]}
+        archived_ids = {job["id"] for job in list_jobs(status="archived")["jobs"]}
+        self.assertNotIn(target_id, default_ids)
+        self.assertIn(target_id, archived_ids)
 
     def test_expanded_source_adapters_normalize_fixture_jobs(self):
         adapters = [

@@ -44,6 +44,30 @@ export function ingestDemoJobs() {
   });
 }
 
+export function ingestLiveJobs() {
+  return request<Record<string, unknown>>("/api/jobs/ingest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      source: "all",
+      demo: false,
+      dry_run: false,
+      query: {
+        keywords: "Software Engineer Intern",
+        location: "",
+        demo: false,
+        max_results: 10,
+      },
+    }),
+  });
+}
+
+export async function runLiveSearch() {
+  const ingest = await ingestLiveJobs();
+  const scoring = await scoreJobs();
+  return { ingest, scoring };
+}
+
 export function scoreJobs() {
   return request<Record<string, unknown>>("/api/jobs/score", { method: "POST" });
 }

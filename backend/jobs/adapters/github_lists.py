@@ -3,12 +3,15 @@ from __future__ import annotations
 import re
 from urllib.parse import urlparse
 
+import requests
+
 from backend.jobs.adapters.base import JobCreate, RawJob, SourceHealth
 from backend.jobs.adapters.common import clean_text, fetch_text, github_raw_url, infer_employment_type, infer_remote_type, load_fixture_text
 from backend.jobs.schemas import JobQuery
 
 
 LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://[^)]+)\)")
+GITHUB_REPO_RE = re.compile(r"^https://github\.com/([^/]+)/([^/#?]+)/*$")
 
 
 def parse_markdown_jobs(markdown: str, source_url: str = "") -> list[dict]:
@@ -67,12 +70,31 @@ class GitHubListsAdapter:
             return [RawJob(source=self.name, payload=row, source_url="fixture://github_lists") for row in rows[: query.max_results]]
 
         for repo in self.config.get("repos") or []:
-            url = github_raw_url(repo)
-            markdown = fetch_text(url)
+            markdown = ""
+            for url in self._raw_candidates(repo):
+                try:
+                    markdown = fetch_text(url)
+                    break
+                except requests.HTTPError as exc:
+                    if exc.response is None or exc.response.status_code != 404:
+                        raise
+            if not markdown:
+                continue
             for row in parse_markdown_jobs(markdown, repo)[: query.max_results]:
                 parsed = urlparse(repo)
                 payloads.append(RawJob(source=self.name, payload={**row, "repo": parsed.path.strip("/")}, source_url=repo))
         return payloads
+
+    def _raw_candidates(self, repo: str) -> list[str]:
+        match = GITHUB_REPO_RE.match(repo.strip())
+        if not match:
+            return [github_raw_url(repo)]
+        owner, name = match.groups()
+        return [
+            github_raw_url(repo),
+            f"https://raw.githubusercontent.com/{owner}/{name}/dev/README.md",
+            f"https://raw.githubusercontent.com/{owner}/{name}/master/README.md",
+        ]
 
     def normalize(self, raw: RawJob) -> JobCreate:
         item = raw.payload
