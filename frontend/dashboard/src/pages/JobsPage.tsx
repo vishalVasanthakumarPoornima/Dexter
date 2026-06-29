@@ -9,7 +9,6 @@ import {
   Search,
   ShieldCheck,
   SkipForward,
-  Sparkles,
 } from "lucide-react";
 import {
   approveJob,
@@ -17,17 +16,15 @@ import {
   getJobDetail,
   getJobs,
   getJobsOverview,
-  ingestDemoJobs,
-  runDemoDaily,
   runLiveSearch,
   scoreJobs,
   skipJob,
-  startDemoApplySession,
+  startApplySession,
 } from "../api/jobsApi";
 import type { BrowserApplySession, JobDetailResponse, JobItem, JobsOverview } from "../jobs/types/jobs";
 
 type JobsPageProps = {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string) => Promise<void> | void;
 };
 
 function scoreLabel(job: JobItem) {
@@ -63,10 +60,15 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
     ]);
     setOverview(overviewData);
     setJobs(jobsData.jobs ?? []);
-    const targetId = selectedJobId ?? jobsData.jobs?.[0]?.id;
+    const visibleJobs = jobsData.jobs ?? [];
+    const selectedStillVisible = selectedJobId ? visibleJobs.some((job) => job.id === selectedJobId) : false;
+    const targetId = selectedStillVisible ? selectedJobId : visibleJobs[0]?.id;
     if (targetId) {
       setSelectedJobId(targetId);
       setDetail(await getJobDetail(targetId));
+    } else {
+      setSelectedJobId(null);
+      setDetail(null);
     }
     setStatus(`Loaded ${jobsData.count ?? 0} job(s).`);
   }
@@ -80,6 +82,19 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
       await refresh();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : `${label} failed.`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function askDexterForStatus() {
+    setBusy(true);
+    setStatus("Asking Dexter for job application status...");
+    try {
+      await onSendMessage("job application status");
+      setStatus("Asked Dexter for job application status.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Ask Dexter failed.");
     } finally {
       setBusy(false);
     }
@@ -109,19 +124,13 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
             <strong>Jobs OS</strong>
           </div>
           <div className="header-actions">
-            <button disabled={busy} onClick={() => runAction("Run demo daily flow", runDemoDaily)}>
-              <Play size={14} /> Demo
-            </button>
-            <button disabled={busy} onClick={() => runAction("Ingest demo jobs", ingestDemoJobs)}>
-              <Sparkles size={14} /> Demo Ingest
-            </button>
             <button disabled={busy} onClick={() => runAction("Live job search", runLiveSearch)}>
               <Search size={14} /> Live Search
             </button>
             <button disabled={busy} onClick={() => runAction("Score jobs", scoreJobs)}>
               <RefreshCw size={14} /> Score
             </button>
-            <button disabled={busy} onClick={() => onSendMessage("job application status")}>
+            <button disabled={busy} onClick={askDexterForStatus}>
               <FileText size={14} /> Ask Dexter
             </button>
           </div>
@@ -176,7 +185,7 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
                   </b>
                 </button>
               ))}
-              {!jobs.length && <p className="jobs-empty">No jobs loaded. Run Demo or Live Search to populate the feed.</p>}
+              {!jobs.length && <p className="jobs-empty">No jobs loaded. Run Live Search to populate the feed.</p>}
             </div>
           </section>
 
@@ -274,8 +283,8 @@ function JobDetailPanel({
         <button disabled={busy} onClick={() => runAction("Skip job", () => skipJob(job.id))}>
           <SkipForward size={14} /> Skip
         </button>
-        <button disabled={busy} onClick={() => runAction("Start fake apply session", () => startDemoApplySession(job.id).then(async (result) => { await refreshJob(); return result; }))}>
-          <Play size={14} /> Fake Form
+        <button disabled={busy} onClick={() => runAction("Start apply session", () => startApplySession(job.id).then(async (result) => { await refreshJob(); return result; }))}>
+          <Play size={14} /> Apply Session
         </button>
         {job.apply_url && (
           <a className="jobs-link-button" href={job.apply_url} target="_blank" rel="noreferrer">

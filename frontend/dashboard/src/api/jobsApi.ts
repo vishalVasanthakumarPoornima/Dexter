@@ -3,11 +3,20 @@ import type { JobDetailResponse, JobsListResponse, JobsOverview } from "../jobs/
 const API_BASE = "http://127.0.0.1:8000";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, options);
-  if (!response.ok) {
-    throw new Error(`Jobs API request failed: ${response.status}`);
+  try {
+    const response = await fetch(`${API_BASE}${path}`, options);
+    if (!response.ok) {
+      throw new Error(`Jobs API request failed: ${response.status}`);
+    }
+    return response.json() as Promise<T>;
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("Jobs backend is not reachable at 127.0.0.1:8000. Start or refresh Dexter, then try again.", {
+        cause: error,
+      });
+    }
+    throw error;
   }
-  return response.json() as Promise<T>;
 }
 
 export function getJobsOverview() {
@@ -98,4 +107,8 @@ export function skipJob(jobId: number) {
 
 export function startDemoApplySession(jobId: number) {
   return request<Record<string, unknown>>(`/api/jobs/${jobId}/apply-session?demo=true`, { method: "POST" });
+}
+
+export function startApplySession(jobId: number) {
+  return request<Record<string, unknown>>(`/api/jobs/${jobId}/apply-session`, { method: "POST" });
 }
