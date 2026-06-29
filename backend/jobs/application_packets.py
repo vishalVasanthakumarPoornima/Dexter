@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 from backend.jobs.config import generated_dir
-from backend.jobs.models import ApplicationPacket, ApplicationProfile, Job, JobScore
+from backend.jobs.models import ApplicationPacket, ApplicationProfile, Job, JobScore, Resume
 
 
 def _slug(value: str) -> str:
@@ -24,7 +24,7 @@ def _keyword_list(job: Job, profile: ApplicationProfile) -> list[str]:
     return keywords[:16]
 
 
-def build_packet_artifacts(job: Job, profile: ApplicationProfile, score: JobScore | None = None) -> dict:
+def build_packet_artifacts(job: Job, profile: ApplicationProfile, score: JobScore | None = None, resume_text: str = "") -> dict:
     target_dir = generated_dir() / "application_packets" / f"{job.id}-{_slug(job.company)}-{_slug(job.title)}"
     target_dir.mkdir(parents=True, exist_ok=True)
     keywords = _keyword_list(job, profile)
@@ -51,6 +51,36 @@ def build_packet_artifacts(job: Job, profile: ApplicationProfile, score: JobScor
     if not keywords:
         resume_suggestions.append("- Review the job manually; Dexter did not find enough overlap to tailor safely.")
 
+    resume_draft = [
+        f"# Tailored Resume Draft for {job.title} at {job.company}",
+        "",
+        "Generated from the configured profile/resume material. Review before using; do not add unsupported experience.",
+        "",
+        f"Base resume path: {profile.resume_path or 'not configured'}",
+        "",
+        "## Target Role",
+        f"- Title: {job.title}",
+        f"- Company: {job.company}",
+        f"- Location: {job.location or 'Not specified'}",
+        "",
+        "## Safe ATS Emphasis",
+    ]
+    if keywords:
+        resume_draft.extend([f"- {keyword}" for keyword in keywords])
+    else:
+        resume_draft.append("- No safe keyword emphasis detected from current profile/resume data.")
+    resume_draft.extend(
+        [
+            "",
+            "## Suggested Resume Edits",
+            "Use these edits only where the underlying resume/profile already supports them.",
+            *[f"- Move or strengthen an existing bullet that demonstrates {keyword}." for keyword in keywords[:6]],
+            "",
+            "## Existing Resume Text",
+            resume_text.strip() or "No parsed resume text is available. Configure profile.resume_path to improve tailoring.",
+        ]
+    )
+
     cover_letter = [
         f"Dear {job.company} hiring team,",
         "",
@@ -70,10 +100,12 @@ def build_packet_artifacts(job: Job, profile: ApplicationProfile, score: JobScor
         "sponsorship": profile.visa_notes or "BLOCKER: sponsorship preference is not configured.",
     }
 
-    resume_path = target_dir / "resume_suggestions.md"
+    resume_path = target_dir / "tailored_resume_draft.md"
+    suggestions_path = target_dir / "resume_suggestions.md"
     cover_path = target_dir / "cover_letter_draft.md"
     answers_path = target_dir / "short_answers.json"
-    resume_path.write_text("\n".join(resume_suggestions) + "\n", encoding="utf-8")
+    resume_path.write_text("\n".join(resume_draft) + "\n", encoding="utf-8")
+    suggestions_path.write_text("\n".join(resume_suggestions) + "\n", encoding="utf-8")
     cover_path.write_text("\n".join(cover_letter) + "\n", encoding="utf-8")
     answers_path.write_text(json.dumps(short_answers, indent=2), encoding="utf-8")
 
@@ -81,7 +113,7 @@ def build_packet_artifacts(job: Job, profile: ApplicationProfile, score: JobScor
         "resume_variant_path": str(resume_path),
         "cover_letter_path": str(cover_path),
         "short_answers_json": short_answers,
-        "resume_diff_summary": "Generated resume suggestions only; no resume file was modified.",
+        "resume_diff_summary": f"Generated tailored resume draft plus suggestions; base resume was not modified. Suggestions: {suggestions_path}",
         "recommendation": score.recommendation if score else "manual_review",
         "confidence": score.confidence if score else 0.5,
         "blockers": blockers,
@@ -94,7 +126,8 @@ def upsert_packet(session, job: Job, profile: ApplicationProfile, score: JobScor
         .filter(ApplicationPacket.job_id == job.id, ApplicationPacket.profile_id == profile.id)
         .one_or_none()
     )
-    artifacts = build_packet_artifacts(job, profile, score)
+    resume = session.query(Resume).filter(Resume.profile_id == profile.id).order_by(Resume.created_at.desc()).first()
+    artifacts = build_packet_artifacts(job, profile, score, resume.parsed_text if resume else "")
     if packet is None:
         packet = ApplicationPacket(job_id=job.id, profile_id=profile.id, **artifacts)
         session.add(packet)

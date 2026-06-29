@@ -10,6 +10,14 @@ python -m backend.app.jobs.cli run-daily --demo
 
 Open the dashboard at `http://127.0.0.1:5173` and select the Jobs tab.
 
+Dashboard workflow:
+
+- Set role, term, year, posted date, employment type, source, score, and work-mode filters before pressing **Live Search**.
+- **Refresh** reloads the current filtered feed without running a new external search.
+- **Bulk Open** asks the local backend to open application links for the current filtered feed, capped by the Bulk Open input.
+- **Approve + Tailor** creates or updates an approved application packet with `tailored_resume_draft.md`, resume suggestions, and a cover-letter draft. The base resume is not modified.
+- **Prep Form** starts a supervised form-preparation session and still stops before any final submit.
+
 Core workflow:
 
 ```bash

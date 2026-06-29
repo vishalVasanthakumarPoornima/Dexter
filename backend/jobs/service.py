@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import subprocess
+import sys
+import webbrowser
 from datetime import datetime, timezone
 from typing import Any
 
@@ -12,6 +15,7 @@ from backend.jobs.approvals import approve_packet, ensure_approval, reject_packe
 from backend.jobs.browser.apply_session import create_apply_session
 from backend.jobs.config import load_jobs_config
 from backend.jobs.db import get_session, init_db
+from backend.jobs.filtering import matches_job_query
 from backend.jobs.models import (
     Approval,
     ApplicationProfile,
@@ -56,6 +60,16 @@ def _session_or_new(session: Session | None = None) -> tuple[Session, bool]:
     if session is not None:
         return session, False
     return get_session(), True
+
+
+def _open_application_url(url: str) -> bool:
+    if sys.platform == "darwin":
+        try:
+            result = subprocess.run(["open", url], capture_output=True, timeout=5, check=False)
+            return result.returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            return False
+    return bool(webbrowser.open_new_tab(url))
 
 
 def _serialize_dt(value) -> str | None:
@@ -167,10 +181,14 @@ def ingest_jobs(
             try:
                 raw_jobs = adapter.fetch_jobs(job_query)
                 seen_canonicals = set()
-                new_count = updated_count = deduped_count = 0
+                new_count = updated_count = deduped_count = filtered_count = matched_count = 0
                 normalized_preview = []
                 for raw in raw_jobs:
                     normalized = adapter.normalize(raw)
+                    if not matches_job_query(normalized, job_query):
+                        filtered_count += 1
+                        continue
+                    matched_count += 1
                     prepared, canonical_id, _ = prepare_job(normalized) if dry_run else (normalized, "", None)
                     if dry_run:
                         if canonical_id in seen_canonicals:
@@ -188,18 +206,23 @@ def ingest_jobs(
                     elif is_updated:
                         updated_count += 1
                 run.status = "success"
-                run.jobs_found = len(raw_jobs)
+                run.jobs_found = matched_count
                 run.jobs_new = new_count
                 run.jobs_updated = updated_count
                 run.jobs_deduped = deduped_count
                 run.finished_at = utc_now()
-                run.metadata_json = {"dry_run": dry_run, "preview": normalized_preview[:10]}
+                run.metadata_json = {
+                    "dry_run": dry_run,
+                    "jobs_seen": len(raw_jobs),
+                    "jobs_filtered": filtered_count,
+                    "preview": normalized_preview[:10],
+                }
                 source_row = active_session.execute(select(JobSource).where(JobSource.name == name)).scalar_one_or_none()
                 if source_row:
                     source_row.health_status = "ok"
                     source_row.last_run_at = utc_now()
                     source_row.last_error = ""
-                total_found += len(raw_jobs)
+                total_found += matched_count
                 total_new += new_count
                 total_updated += updated_count
                 total_deduped += deduped_count
@@ -207,7 +230,9 @@ def ingest_jobs(
                     {
                         "source": name,
                         "status": "success",
-                        "jobs_found": len(raw_jobs),
+                        "jobs_seen": len(raw_jobs),
+                        "jobs_found": matched_count,
+                        "jobs_filtered": filtered_count,
                         "jobs_new": new_count,
                         "jobs_updated": updated_count,
                         "jobs_deduped": deduped_count,
@@ -433,6 +458,7 @@ def list_jobs(
     q: str | None = None,
     min_score: float | None = None,
     limit: int = 100,
+    job_query: JobQuery | None = None,
     session: Session | None = None,
 ) -> dict[str, Any]:
     active_session, should_close = _session_or_new(session)
@@ -448,12 +474,55 @@ def list_jobs(
             like = f"%{q}%"
             query = query.filter((Job.title.ilike(like)) | (Job.company.ilike(like)) | (Job.description.ilike(like)))
         jobs = []
-        for job in query.limit(limit).all():
+        for job in query.all():
+            if job_query and not matches_job_query(job, job_query):
+                continue
             score = active_session.query(JobScore).filter(JobScore.job_id == job.id).order_by(desc(JobScore.created_at)).first()
             if min_score is not None and (not score or score.overall_score < min_score):
                 continue
-            jobs.append(serialize_job(job, score))
-        return {"ok": True, "jobs": jobs, "count": len(jobs)}
+            jobs.append((job, score))
+        jobs.sort(
+            key=lambda item: (
+                item[1].overall_score if item[1] else -1,
+                item[0].discovered_at.timestamp() if item[0].discovered_at else 0,
+            ),
+            reverse=True,
+        )
+        serialized = [serialize_job(job, score) for job, score in jobs[:limit]]
+        return {"ok": True, "jobs": serialized, "count": len(jobs)}
+    finally:
+        if should_close:
+            active_session.close()
+
+
+def open_application_links(job_ids: list[int], limit: int = 10, session: Session | None = None) -> dict[str, Any]:
+    active_session, should_close = _session_or_new(session)
+    try:
+        ordered_ids = list(dict.fromkeys(job_ids))
+        capped_limit = max(1, min(int(limit or 10), 50))
+        if not ordered_ids:
+            return {"ok": True, "opened": 0, "jobs": [], "message": "No jobs selected."}
+
+        jobs = active_session.query(Job).filter(Job.id.in_(ordered_ids), Job.status != "archived").all()
+        by_id = {job.id: job for job in jobs}
+        opened_jobs = []
+        failed_jobs = []
+        attempted = 0
+        for job_id in ordered_ids:
+            if attempted >= capped_limit:
+                break
+            job = by_id.get(job_id)
+            if job is None or not job.apply_url:
+                continue
+            attempted += 1
+            payload = {"id": job.id, "title": job.title, "company": job.company, "apply_url": job.apply_url}
+            if _open_application_url(job.apply_url):
+                opened_jobs.append(payload)
+            else:
+                failed_jobs.append(payload)
+
+        log_action("jobs_bulk_open", {"requested": len(ordered_ids), "opened": len(opened_jobs), "failed": len(failed_jobs), "limit": capped_limit})
+        return {"ok": True, "opened": len(opened_jobs), "failed": len(failed_jobs), "jobs": opened_jobs, "failed_jobs": failed_jobs}
     finally:
         if should_close:
             active_session.close()

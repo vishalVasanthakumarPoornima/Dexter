@@ -16,6 +16,8 @@ from backend.jobs.adapters.themuse import TheMuseAdapter
 from backend.jobs.browser.form_analyzer import analyze_form_file
 from backend.jobs.browser.form_filler import planned_field_values
 from backend.jobs.db import reset_engine_for_tests
+from backend.jobs.adapters.base import JobCreate
+from backend.jobs.filtering import matches_job_query
 from backend.jobs.models import ApplicationProfile
 from backend.jobs.schemas import JobQuery
 from backend.jobs.service import (
@@ -24,6 +26,7 @@ from backend.jobs.service import (
     ingest_jobs,
     latest_report,
     list_jobs,
+    open_application_links,
     run_daily,
     score_jobs,
     set_job_status,
@@ -77,10 +80,21 @@ class JobsOSTests(unittest.TestCase):
         packet = generate_packet_for_job(jobs[0]["id"])
         self.assertTrue(packet["ok"])
         self.assertIn("resume_variant_path", packet["packet"])
+        self.assertTrue(packet["packet"]["resume_variant_path"].endswith("tailored_resume_draft.md"))
 
         submit = submit_approved(jobs[0]["id"])
         self.assertFalse(submit["ok"])
         self.assertIn("Auto-submit is disabled", submit["error"])
+
+    def test_bulk_open_uses_application_links_without_submitting(self):
+        run_daily(demo=True)
+        jobs = list_jobs()["jobs"][:2]
+        with patch("backend.jobs.service._open_application_url", return_value=True) as open_tab:
+            result = open_application_links([job["id"] for job in jobs], limit=1)
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["opened"], 1)
+        open_tab.assert_called_once()
 
     def test_fake_apply_session_blocks_sensitive_fields(self):
         run_daily(demo=True)
@@ -112,6 +126,54 @@ class JobsOSTests(unittest.TestCase):
         archived_ids = {job["id"] for job in list_jobs(status="archived")["jobs"]}
         self.assertNotIn(target_id, default_ids)
         self.assertIn(target_id, archived_ids)
+
+    def test_role_query_filters_unrelated_jobs(self):
+        query = JobQuery(
+            keywords="Software Engineer Intern",
+            roles=["Software Engineer Intern"],
+            employment_types=["internship"],
+            require_internship=True,
+        )
+        matching = JobCreate(
+            title="Software Engineer Intern",
+            company="Example",
+            description="Build backend APIs and React tools during an internship.",
+            employment_type="internship",
+            internship_flag=True,
+        )
+        unrelated = JobCreate(
+            title="Supervisor de turno",
+            company="Delivery Hero",
+            description="Store operations shift supervisor role.",
+            employment_type="full_time",
+            internship_flag=False,
+        )
+        broad_developer = JobCreate(
+            title="Developer Success Engineer",
+            company="Vercel",
+            description="Support developers and internal teams with platform adoption.",
+            employment_type="full_time",
+            internship_flag=False,
+        )
+        new_grad = JobCreate(
+            title="New Grad Software Engineer - Health AI & Care Platform",
+            company="Feedinkoo",
+            description="Anima is seeking an Intern/ New Grad Software Engineer.",
+            employment_type="internship",
+            internship_flag=False,
+        )
+        swedish_sales = JobCreate(
+            title="Business Development Representative - Danish, Norwegian or Swedish Speaking",
+            company="Cloudflare",
+            description="Customer development role.",
+            employment_type="internship",
+            internship_flag=True,
+        )
+        self.assertTrue(matches_job_query(matching, query))
+        self.assertFalse(matches_job_query(unrelated, query))
+        self.assertFalse(matches_job_query(broad_developer, query))
+        self.assertFalse(matches_job_query(new_grad, query))
+        self.assertFalse(matches_job_query(swedish_sales, query))
 
     def test_expanded_source_adapters_normalize_fixture_jobs(self):
         adapters = [

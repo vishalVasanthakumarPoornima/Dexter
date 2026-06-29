@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query
 
 from backend.jobs.db import init_db
 from backend.jobs.reports import generate_daily_report
-from backend.jobs.schemas import ApprovalRequest, IngestRequest, JobQuery, ManualLinkRequest, PacketRequest, SourceUpdateRequest
+from backend.jobs.schemas import ApprovalRequest, BulkOpenRequest, IngestRequest, JobQuery, ManualLinkRequest, PacketRequest, SourceUpdateRequest
 from backend.jobs.service import (
     approve_job,
     generate_packet_for_job,
@@ -17,6 +17,7 @@ from backend.jobs.service import (
     list_jobs,
     list_runs,
     list_sources,
+    open_application_links,
     overview,
     reject_job,
     run_daily,
@@ -82,10 +83,31 @@ def jobs_list(
     status: str | None = None,
     source: str | None = None,
     q: str | None = None,
+    role: str | None = None,
+    season: str | None = None,
+    cohort_year: int | None = None,
+    posted_within_days: int | None = None,
+    employment_type: str | None = None,
+    require_internship: bool = False,
+    include_remote: bool = True,
+    include_hybrid: bool = True,
+    include_onsite: bool = True,
     min_score: float | None = Query(default=None),
     limit: int = 100,
 ):
-    return list_jobs(status=status, source=source, q=q, min_score=min_score, limit=limit)
+    query = JobQuery(
+        keywords=q or "",
+        roles=[role] if role else [],
+        season=season or "",
+        cohort_year=cohort_year,
+        posted_within_days=posted_within_days,
+        employment_types=[employment_type] if employment_type else [],
+        require_internship=require_internship,
+        include_remote=include_remote,
+        include_hybrid=include_hybrid,
+        include_onsite=include_onsite,
+    )
+    return list_jobs(status=status, source=source, q=None, min_score=min_score, limit=limit, job_query=query)
 
 
 @router.post("/ingest")
@@ -96,6 +118,11 @@ def jobs_ingest(req: IngestRequest):
 @router.post("/score")
 def jobs_score(profile_id: int | None = None):
     return score_jobs(profile_id=profile_id)
+
+
+@router.post("/open-applications")
+def jobs_open_applications(req: BulkOpenRequest):
+    return open_application_links(job_ids=req.job_ids, limit=req.limit)
 
 
 @router.get("/{job_id}")

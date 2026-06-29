@@ -11,6 +11,14 @@ class JobQuery(BaseModel):
     location: str = ""
     remote: bool | None = None
     employment_types: list[str] = Field(default_factory=list)
+    roles: list[str] = Field(default_factory=list)
+    season: str = ""
+    cohort_year: int | None = None
+    posted_within_days: int | None = None
+    require_internship: bool = False
+    include_remote: bool = True
+    include_hybrid: bool = True
+    include_onsite: bool = True
     max_results: int = 100
     demo: bool = False
 
@@ -41,6 +49,11 @@ class ApprovalRequest(BaseModel):
 class SourceUpdateRequest(BaseModel):
     enabled: bool | None = None
     metadata: dict[str, Any] | None = None
+
+
+class BulkOpenRequest(BaseModel):
+    job_ids: list[int] = Field(default_factory=list)
+    limit: int = 10
 
 
 class JobResponse(BaseModel):

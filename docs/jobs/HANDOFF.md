@@ -12,6 +12,9 @@ Built:
 - Tests under `tests/test_jobs_os.py` and `tests/test_jobs_api.py`.
 - Expanded source adapters for Ashby, SmartRecruiters, Recruitee, The Muse, Arbeitnow, Careerjet, Jooble, and Brave Search.
 - `.env` loading now preserves explicit process env overrides, so test/demo commands can isolate `DEXTER_JOBS_DB_URL`.
+- Structured live-search controls now drive backend filtering for role, term, cohort year, date posted, employment type, source, score, and work mode.
+- Bulk Open is handled by a local backend endpoint and reports open failures instead of relying on fragile frontend popup behavior.
+- Approval now generates a per-job `tailored_resume_draft.md` artifact plus resume suggestions and a cover-letter draft; the base resume is not modified.
 
 Known local runtime artifacts:
 
