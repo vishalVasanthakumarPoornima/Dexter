@@ -59,6 +59,7 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
   const [source, setSource] = useState("");
   const [minScore, setMinScore] = useState("");
   const [role, setRole] = useState("Software Engineer Intern");
+  const [customRole, setCustomRole] = useState("");
   const [season, setSeason] = useState("any");
   const [cohortYear, setCohortYear] = useState("2026");
   const [postedWithinDays, setPostedWithinDays] = useState("30");
@@ -70,10 +71,13 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
   const [maxResults, setMaxResults] = useState("25");
   const [bulkOpenLimit, setBulkOpenLimit] = useState("10");
   const [busy, setBusy] = useState(false);
+  const [liveSearchStartedAt, setLiveSearchStartedAt] = useState<number | null>(null);
+  const [liveSearchElapsed, setLiveSearchElapsed] = useState(0);
 
   const selectedJob = detail?.job ?? jobs.find((job) => job.id === selectedJobId) ?? jobs[0] ?? null;
   const sources = useMemo(() => overview?.sources ?? [], [overview?.sources]);
   const sourceOptions = useMemo(() => sources.map((item) => item.name).sort(), [sources]);
+  const effectiveRole = role === "__custom__" ? customRole.trim() : role;
   const filteredMetrics = useMemo(() => {
     const topMatches = jobs.filter((job) => (job.score?.overall_score ?? 0) >= 70).length;
     const ready = jobs.filter((job) => job.score?.recommendation === "apply").length;
@@ -93,7 +97,7 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
   function searchParams(): JobSearchParams {
     return {
       keyword: query,
-      role,
+      role: effectiveRole,
       source,
       minScore,
       season,
@@ -140,6 +144,24 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
       setStatus(error instanceof Error ? error.message : `${label} failed.`);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function runLiveSearchWithProgress() {
+    const targetRole = effectiveRole || "the selected role";
+    setBusy(true);
+    setLiveSearchElapsed(0);
+    setLiveSearchStartedAt(Date.now());
+    setStatus(`Live search running for ${targetRole}. Checking sources, filtering roles, then scoring matches.`);
+    try {
+      const result = await runLiveSearch(searchParams());
+      setStatus(`Live search complete. Refreshing results... ${JSON.stringify(result).slice(0, 140)}`);
+      await refresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Live job search failed.");
+    } finally {
+      setBusy(false);
+      setLiveSearchStartedAt(null);
     }
   }
 
@@ -240,6 +262,14 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!liveSearchStartedAt) return undefined;
+    const timer = window.setInterval(() => {
+      setLiveSearchElapsed(Math.floor((Date.now() - liveSearchStartedAt) / 1000));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [liveSearchStartedAt]);
+
   return (
     <section className="center wide-page jobs-page">
       <section className="chat-card jobs-shell-card">
@@ -249,8 +279,8 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
             <strong>Jobs OS</strong>
           </div>
           <div className="header-actions">
-            <button disabled={busy} onClick={() => runAction("Live job search", () => runLiveSearch(searchParams()))}>
-              <Search size={14} /> Live Search
+            <button disabled={busy || (role === "__custom__" && !customRole.trim())} onClick={runLiveSearchWithProgress}>
+              {liveSearchStartedAt ? <span className="jobs-button-spinner" aria-hidden="true" /> : <Search size={14} />} Live Search
             </button>
             <button disabled={busy} onClick={() => runAction("Score jobs", scoreJobs)}>
               <RefreshCw size={14} /> Score
@@ -265,6 +295,17 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
         </div>
 
         <p className="jobs-status">{status}</p>
+        {liveSearchStartedAt && (
+          <div className="jobs-live-progress" role="status" aria-live="polite">
+            <span className="jobs-progress-ring" aria-hidden="true" />
+            <div>
+              <strong>Searching live job sources</strong>
+              <p>
+                Running for {liveSearchElapsed}s. Dexter is fetching postings, applying your role filters, deduping, and scoring matches.
+              </p>
+            </div>
+          </div>
+        )}
 
         <section className="jobs-search-panel">
           <div className="jobs-search-grid">
@@ -278,8 +319,15 @@ export default function JobsPage({ onSendMessage }: JobsPageProps) {
                 <option>Frontend Engineer Intern</option>
                 <option>Full Stack Engineer Intern</option>
                 <option>New Grad Software Engineer</option>
+                <option value="__custom__">Other role...</option>
               </select>
             </label>
+            {role === "__custom__" && (
+              <label>
+                <span>Custom Role</span>
+                <input value={customRole} onChange={(event) => setCustomRole(event.target.value)} placeholder="e.g. Robotics Software Intern" />
+              </label>
+            )}
             <label>
               <span>Term</span>
               <select value={season} onChange={(event) => setSeason(event.target.value)}>

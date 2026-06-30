@@ -793,6 +793,59 @@ button {
   line-height: 1.5;
 }
 
+.jobs-live-progress {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(45, 212, 191, 0.28);
+  border-radius: 8px;
+  background: rgba(8, 47, 73, 0.36);
+  margin: 12px 0 0;
+  padding: 12px;
+}
+
+.jobs-live-progress strong {
+  display: block;
+  color: #e0fdfa;
+  font-size: 13px;
+}
+
+.jobs-live-progress p {
+  color: #a5f3fc;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 3px 0 0;
+}
+
+.jobs-progress-ring,
+.jobs-button-spinner {
+  display: inline-block;
+  border-radius: 999px;
+  animation: jobs-spin 0.9s linear infinite;
+}
+
+.jobs-progress-ring {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(125, 211, 252, 0.22);
+  border-top-color: #67e8f9;
+  box-shadow: 0 0 18px rgba(45, 212, 191, 0.22);
+}
+
+.jobs-button-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(207, 250, 254, 0.22);
+  border-top-color: #cffafe;
+}
+
+@keyframes jobs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .jobs-search-panel {
   border: 1px solid rgba(34, 211, 238, 0.16);
   border-radius: 8px;
